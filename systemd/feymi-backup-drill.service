@@ -1,0 +1,10 @@
+[Unit]
+Description=Feymi backup: drill
+After=docker.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/opt/feymi-backup/restore-drill.sh do
+Nice=10
+IOSchedulingClass=idle

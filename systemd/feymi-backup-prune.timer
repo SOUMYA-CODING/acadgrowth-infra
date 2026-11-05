@@ -1,0 +1,10 @@
+[Unit]
+Description=Feymi backup timer: prune
+
+[Timer]
+OnCalendar=Sun *-*-* 04:00:00
+RandomizedDelaySec=15m
+Persistent=true
+
+[Install]
+WantedBy=timers.target

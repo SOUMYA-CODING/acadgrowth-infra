@@ -1,0 +1,9 @@
+# Live database files are never copied raw (they would be inconsistent).
+# The app DB and Coolify's own DB are backed up as dumps instead.
+# Replace the first two lines with the real volume names from: docker volume ls
+/var/lib/docker/volumes/postgres-data-*
+/var/lib/docker/volumes/redis-data-*
+/var/lib/docker/volumes/coolify-db/
+/data/coolify/backups
+*.log
+/var/lib/docker/volumes/coolify-redis/

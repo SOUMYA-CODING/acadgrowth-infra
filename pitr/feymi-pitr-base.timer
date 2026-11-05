@@ -1,0 +1,10 @@
+[Unit]
+Description=Timer for feymi-pitr-base
+
+[Timer]
+OnCalendar=*-*-* 01:30:00
+RandomizedDelaySec=10m
+Persistent=true
+
+[Install]
+WantedBy=timers.target

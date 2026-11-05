@@ -1,0 +1,49 @@
+# PROD PgBouncer on acadgrowth-prod-db. Coolify resource: "Docker Compose Empty" -> paste this file.
+# Turn ON "Connect to Predefined Network" so it can reach the Postgres container.
+# Published ONLY on the private IP 10.0.0.1:6432 (never 0.0.0.0) with TLS required.
+# Postgres itself publishes nothing; this is the only door into the database.
+# TLS files: /opt/acadgrowth-pgbouncer/tls/{server.crt,server.key} on the db server (see RUNBOOK).
+services:
+  pgbouncer:
+    image: edoburu/pgbouncer:v1.25.2-p0   # pinned stable (Jun 2026); bump deliberately
+    restart: unless-stopped
+    ports:
+      - "10.0.0.1:6432:5432"            # private network only
+    volumes:
+      - /opt/acadgrowth-pgbouncer/tls:/tls:ro
+    environment:
+      DB_HOST: ${DB_HOST:?}               # Coolify Postgres internal hostname (container name)
+      DB_PORT: "5432"
+      DB_USER: ${DB_USER:?}               # acadgrowth_app (non-superuser)
+      DB_PASSWORD: ${DB_PASSWORD:?}
+      AUTH_TYPE: scram-sha-256
+      # SESSION mode on purpose: django-tenants switches schools with SET search_path,
+      # which is NOT safe in transaction mode (it can leak to another client).
+      POOL_MODE: session
+      SERVER_RESET_QUERY: DISCARD ALL     # wipes search_path etc. before a server conn is reused
+      MAX_CLIENT_CONN: "500"
+      DEFAULT_POOL_SIZE: "70"
+      MIN_POOL_SIZE: "5"
+      RESERVE_POOL_SIZE: "10"
+      RESERVE_POOL_TIMEOUT: "3"
+      MAX_DB_CONNECTIONS: "85"            # < acadgrowth_app CONNECTION LIMIT 90 < max_connections 100
+      SERVER_IDLE_TIMEOUT: "300"
+      SERVER_LIFETIME: "3600"
+      QUERY_WAIT_TIMEOUT: "30"
+      # Clients (api/workers on other servers) must use TLS: traffic crosses the private network.
+      CLIENT_TLS_SSLMODE: require
+      CLIENT_TLS_CERT_FILE: /tls/server.crt
+      CLIENT_TLS_KEY_FILE: /tls/server.key
+      SERVER_TLS_SSLMODE: disable         # PgBouncer -> Postgres stays inside Docker on this host
+      ADMIN_USERS: ${DB_USER}
+      STATS_USERS: ${DB_USER}
+      LISTEN_PORT: "5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -p 5432 || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    mem_limit: 256m
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }

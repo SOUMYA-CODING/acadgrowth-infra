@@ -1,0 +1,10 @@
+[Unit]
+Description=Feymi PITR: nightly base backup
+After=docker.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/opt/feymi-backup/pitr.sh base
+Nice=10
+IOSchedulingClass=idle

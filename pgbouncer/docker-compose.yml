@@ -1,0 +1,39 @@
+# Coolify resource: "Docker Compose Empty" -> paste this file.
+# Turn ON "Connect to Predefined Network" so the backend can reach it.
+# No ports are published: PgBouncer is reachable only inside Docker.
+services:
+  pgbouncer:
+    image: edoburu/pgbouncer:v1.25.2-p0   # pinned stable (Jun 2026); bump deliberately
+    restart: unless-stopped
+    environment:
+      DB_HOST: ${DB_HOST:?}               # Coolify Postgres internal hostname (container name)
+      DB_PORT: "5432"
+      DB_USER: ${DB_USER:?}
+      DB_PASSWORD: ${DB_PASSWORD:?}
+      AUTH_TYPE: scram-sha-256
+      # SESSION mode on purpose: django-tenants switches schools with SET search_path,
+      # which is NOT safe in transaction mode (it can leak to another client).
+      POOL_MODE: session
+      SERVER_RESET_QUERY: DISCARD ALL     # wipes search_path etc. before a server conn is reused
+      MAX_CLIENT_CONN: "500"              # clients (Django/Celery/LangGraph) PgBouncer will accept
+      DEFAULT_POOL_SIZE: "70"             # real Postgres connections per db/user pair
+      MIN_POOL_SIZE: "5"
+      RESERVE_POOL_SIZE: "10"
+      RESERVE_POOL_TIMEOUT: "3"
+      MAX_DB_CONNECTIONS: "85"            # hard cap; Postgres max_connections must be >= 100 (its default)
+      SERVER_IDLE_TIMEOUT: "300"
+      SERVER_LIFETIME: "3600"
+      QUERY_WAIT_TIMEOUT: "30"            # fail fast instead of hanging if the pool is exhausted
+      CLIENT_TLS_SSLMODE: disable         # traffic never leaves the private Docker network
+      ADMIN_USERS: ${DB_USER}
+      STATS_USERS: ${DB_USER}
+      LISTEN_PORT: "5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -p 5432 || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    mem_limit: 128m
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }

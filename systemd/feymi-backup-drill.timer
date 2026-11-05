@@ -1,0 +1,10 @@
+[Unit]
+Description=Feymi backup timer: drill
+
+[Timer]
+OnCalendar=Sun *-*-* 05:30:00
+RandomizedDelaySec=10m
+Persistent=true
+
+[Install]
+WantedBy=timers.target

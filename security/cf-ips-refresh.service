@@ -1,0 +1,9 @@
+[Unit]
+Description=Refresh Cloudflare IP sets for the origin lock
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/cf-origin-lock.sh refresh
+ExecStartPost=/usr/sbin/netfilter-persistent save

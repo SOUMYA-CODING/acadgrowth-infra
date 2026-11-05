@@ -1,0 +1,10 @@
+[Unit]
+Description=Feymi backup: prune
+After=docker.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/opt/feymi-backup/backup.sh prune
+Nice=10
+IOSchedulingClass=idle
